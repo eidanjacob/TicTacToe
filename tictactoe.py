@@ -17,21 +17,26 @@ t = 0
 player = 1
 # Miniboard wins
 miniVictories = [[None for i in range(3)] for j in range(3)]
+# Dictionary saves the possible values for the state at depth x in the current search tree. 
+# When it is time to rollback from depth t to t-1: 
+# # find the max or min value of that state as appropriate and save it as a possible value for its parent state (t-1)
+# # then reset the list of possible values for depth t
+values = {x: [] for x in range(81)}
 
 while True:
     # Pop move from stack
     currentMove = newMoveStack.pop()
-    print(str(currentMove) + " popped from new stack")
+    # print(str(currentMove) + " popped from new stack")
     # If popped move is the next turn
     if currentMove[4] == t+1:
         [X, Y, x, y, t, player] = currentMove[:]
         wonMini = False
         board[X][Y][x][y] = player
-        print(str(currentMove) + " marked")
-        input("ok?")
+        # print(str(currentMove) + " marked")
+        # input("ok?")
         # Push move to stack (for possible future rollback)
         oldMoveStack.append(currentMove)
-        print(str(currentMove) + " pushed to old stack")
+        # print(str(currentMove) + " pushed to old stack")
         # Check if latest move won the mini board
         if miniVictories[X][Y] is None:
             # Check rows
@@ -46,8 +51,8 @@ while True:
                         
                 if(equal):
                     miniVictories[X][Y] = currentMove
-                    print(str(currentMove) + " won mini board " + str([X, Y]))
-                    input("ok?")
+                    # print(str(currentMove) + " won mini board " + str([X, Y]))
+                    # input("ok?")
                     wonMini = True
 
         if miniVictories[X][Y] is None:            
@@ -63,8 +68,8 @@ while True:
                         
                 if(equal):
                     miniVictories[X][Y] = currentMove
-                    print(str(currentMove) + " won mini board " + str([X, Y]))
-                    input("ok?")
+                    # print(str(currentMove) + " won mini board " + str([X, Y]))
+                    # input("ok?")
                     wonMini = True
 
         if miniVictories[X][Y] is None:        
@@ -72,8 +77,8 @@ while True:
             if board[X][Y][1][1] == player:
                 if (board[X][Y][0][0] == player and board[X][Y][2][2] == player) or (board[X][Y][2][0] == player and board[X][Y][0][2] == player):
                     miniVictories[X][Y] = currentMove
-                    print(str(currentMove) + " won mini board " + str([X, Y]))
-                    input("ok?")
+                    # print(str(currentMove) + " won mini board " + str([X, Y]))
+                    # input("ok?")
                     wonMini = True
 
         wonMega = False
@@ -90,8 +95,8 @@ while True:
                         equal = equal and miniVictories[row][col][5] == player
                         
                 if(equal):
-                    print(str(currentMove) + " won mega board ")
-                    input("ok?")
+                    # print(str(currentMove) + " won mega board ")
+                    # input("ok?")
                     wonMega = True
 
             if not wonMega:            
@@ -108,8 +113,8 @@ while True:
                                 break
                             
                     if equal:
-                        print(str(currentMove) + " won mega board ")
-                        input("ok?")
+                        # print(str(currentMove) + " won mega board ")
+                        # input("ok?")
                         wonMega = True
 
             if not wonMega:        
@@ -139,16 +144,17 @@ while True:
         if wonMega or t == 81:
             lastMove = oldMoveStack.pop()
             [X, Y, x, y, t, player] = lastMove[:]
+            values[t-1].append(int(wonMega)*player)
             # Undo last move
             board[X][Y][x][y] = 0
-            print(str(lastMove) + " unmarked")
-            input("ok?")
+            # print(str(lastMove) + " unmarked")
+            # input("ok?")
             t = t-1
             for i in range(3):
                 for j in range(3):
                     if miniVictories[i][j] == lastMove:
                         miniVictories[i][j] = None
-                        print("miniboard " + str([i,j]) + " unwon")
+                        # print("miniboard " + str([i,j]) + " unwon")
                         break
         else:
             # Go deeper
@@ -159,7 +165,7 @@ while True:
                         nextMiniFull = False
                         newmove = [x, y, i, j, t+1, -1 * player]
                         newMoveStack.append(newmove)
-                        print(str(newmove) + " pushed to new stack")
+                        # print(str(newmove) + " pushed to new stack")
             
             if nextMiniFull:
                 for a in range(3):
@@ -169,21 +175,34 @@ while True:
                                 if board[a][b][c][d] == 0:
                                     newmove = [a, b, c, d, t+1, -1 * player]
                                     newMoveStack.append(newmove)
-                                    print(str(newmove) + " pushed to new stack")
+                                    # print(str(newmove) + " pushed to new stack")
     else:
         # Roll back further!
+        if t % 2 == 0:
+            # It is now min's turn. The value of t is the minimum value of all possible t+1. Append this to list of values for t-1
+            values[t-1].append(min(values[t]))
+        else:
+            values[t-1].append(max(values[t]))
+
+        if(t < 50):
+            print(t)
+
+        values[t] = []
         lastMove = oldMoveStack.pop()
         [X, Y, x, y, t, player] = lastMove[:]
         # Undo last move
-        print(str(lastMove) + " unmarked")
-        input("ok?")
-        if not board[X][Y][x][y] == player:
-            print("OH NO")
+        # print(str(lastMove) + " unmarked")
+        # input("ok?")
+        # if not board[X][Y][x][y] == player:
+        #     print("OH NO")
         board[X][Y][x][y] = 0
         t = t-1
         for i in range(3):
             for j in range(3):
                 if miniVictories[i][j] == lastMove:
                     miniVictories[i][j] = None
-                    print("miniboard " + str([i,j]) + " unwon")
+                    # print("miniboard " + str([i,j]) + " unwon")
                     break
+
+
+print(max(values[0]))
